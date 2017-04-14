@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<clients>
+	<client id="123456789007">
+		<name>Bartosz</name>
+		<surname>Ujazdowski</surname>
+		<address>
+			<street>Lipowa</street>
+			<city>Krosniewice</city>
+			<postcode>99340</postcode>
+			<house>25</house>
+		</address>
+		<accountBalance>6.66</accountBalance>
+		<pesel>96102602657</pesel>
+	</client>
+	<client id="123456789097">
+		<name>Kamil</name>
+		<surname>Kowalski</surname>
+		<address>
+			<street>Smutna</street>
+			<city>Lodz</city>
+			<postcode>99550</postcode>
+			<house>25</house>
+		</address>
+		<accountBalance>100000.99</accountBalance>
+		<pesel>96102602657</pesel>
+	</client>
+</clients>
