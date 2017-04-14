@@ -1,10 +1,18 @@
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -130,6 +138,7 @@ public class Model {
 		for (Client client : this.clients){
 			if (client.getPesel().equals(pesel)){
 				result.add(client);
+				break;
 			}
 		}
 		
@@ -143,6 +152,7 @@ public class Model {
 			if (client.getAccountNumber().equals(clientNumber)){
 				result.add(client);
 			}
+			break;
 		}
 		
 		return result;
@@ -167,7 +177,116 @@ public class Model {
 		return result;
 	}
 	
+	public void addNewClient(String [] sClient) throws Exception{
+		if (sClient.length != 8){
+			throw new Exception("Bad size of array in new client function!");
+		}
+		Client client = new Client(	sClient[0], 
+									sClient[1], 
+									sClient[2], 
+									new Address(sClient[5],
+												sClient[4],
+												Integer.parseInt(sClient[6]),
+												Integer.parseInt(sClient[7])),
+									Double.parseDouble(sClient[3]),
+									geneateAccountNumber(sClient[2]));
+		
+		clients.add(client);		
+	}
+	
+	public void removeAccounts(List<Client> rClients){
+		for (Client client : rClients){
+			clients.remove(client);
+		}
+	}
+	
+	private String geneateAccountNumber(String Pesel){
+		Random rand = new Random();
+		return new String("	6788776655" + 
+							Pesel + 
+							(rand.nextInt(89999) + 10000) );
+	}
+	
+	public void changeAccountBalance(Client client, double cash){
+		client.setAccountBalance(client.getAccountBalance() + cash);
+	}
+	
+	public void transfer(Client sender, Client receiver, double cash) throws Exception{
+		if (sender.getAccountBalance() < cash){
+			throw new Exception("Lack of account funds");
+		}
+		
+		changeAccountBalance(sender, -cash);
+		changeAccountBalance(receiver, cash);
+	}
+	
 	public List<Client> getClients(){
 		return clients;
 	}
+	
+	public void saveToXML(){
+		Document doc;
+		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+		
+		try {
+			DocumentBuilder db = dbf.newDocumentBuilder();
+	        doc = db.newDocument();
+	        Element rootEle = doc.createElement("clients");
+	        doc.appendChild(rootEle);
+	        
+	        for (Client client : clients){
+	        	Element eClient = doc.createElement("client");
+	        	eClient.setAttribute("id", client.getAccountNumber());
+	        	//name
+	        	Element element = doc.createElement("name");
+	        	element.appendChild(doc.createTextNode(client.getName()));
+	        	eClient.appendChild(element);
+	        	//surname
+	        	element = doc.createElement("surname");
+	        	element.appendChild(doc.createTextNode(client.getSurname()));
+	        	eClient.appendChild(element);
+	        	//street
+	        	element = doc.createElement("street");
+	        	Address addr = client.getAddress();
+	        	element.appendChild(doc.createTextNode(addr.getStreet()));
+	        	eClient.appendChild(element);
+	        	//city
+	        	element = doc.createElement("city");
+	        	element.appendChild(doc.createTextNode(addr.getCity()));
+	        	eClient.appendChild(element);
+	        	//postcode
+	        	element = doc.createElement("postcode");
+	        	element.appendChild(doc.createTextNode(addr.getPostalCode().toString()));
+	        	eClient.appendChild(element);
+	        	//house
+	        	element = doc.createElement("house");
+	        	element.appendChild(doc.createTextNode(addr.getHouseNomber().toString()));
+	        	eClient.appendChild(element);
+	        	//accountbalance
+	        	element = doc.createElement("acountBalance");
+	        	element.appendChild(doc.createTextNode(client.getAccountBalance().toString()));
+	        	eClient.appendChild(element);
+	        	//pesel
+	        	element = doc.createElement("pesel");
+	        	element.appendChild(doc.createTextNode(client.getPesel()));
+	        	eClient.appendChild(element);
+	        	
+	        	rootEle.appendChild(eClient);
+	        }
+	        	
+        	TransformerFactory transformerFactory = TransformerFactory.newInstance();
+    		Transformer transformer = transformerFactory.newTransformer();
+    		DOMSource source = new DOMSource(doc);
+    		StreamResult result = new StreamResult(new File("db.xml"));
+	    		
+    		transformer.transform(source, result);
+		}catch (ParserConfigurationException e){
+			e.printStackTrace();
+		} catch (TransformerConfigurationException e) {
+			e.printStackTrace();
+		} catch (TransformerException e) {
+			e.printStackTrace();
+		}
+	}
+	
 }

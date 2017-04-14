@@ -2,11 +2,16 @@ public class Client{
   private String name;
   private String surname;
   private Address address;
-  private double accountBalance;
+  private Double accountBalance;
   private String pesel;
   private String accountNumber;
   
-  	Client(String name, String surname, String pesel, Address address, double accountBalance, String accountNumber){
+  	Client(	String name, 
+  			String surname, 
+  			String pesel, 
+  			Address address, 
+  			Double accountBalance, 
+  			String accountNumber){
 		this.setName(name);
 		this.setSurname(surname);
 		this.setPesel(pesel);
@@ -26,7 +31,7 @@ public class Client{
 		this.pesel = pesel;
 	}
 	
-	public double getAccountBalance() {
+	public Double getAccountBalance() {
 		return accountBalance;
 	}
 	

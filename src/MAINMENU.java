@@ -6,7 +6,8 @@ public enum MAINMENU {
 	REMOVECLIENT(3),
 	SHOWALLCLIENTS(4),
 	TRANSFER(5),
-	FINDCLIENT(6);
+	FINDCLIENT(6),
+	PAYOFF(7);
 	
 	private final int value;
 	MAINMENU(int value){
