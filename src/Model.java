@@ -35,6 +35,8 @@ public class Model {
 			System.err.println("Can not load clients data base - SAX exception: " + e.getMessage());
 		} catch (IOException e) {
 			System.err.println("Can not load clients data base - IO exception: " + e.getMessage());
+		} catch(PeselIsNotValidException e){
+			System.err.println("Some records are corrupted. Database is not valid. " + e.getMessage());
 		} catch(Exception e){
 			System.err.println("Can not load clients data base: " + e.getMessage());
 		}
@@ -75,7 +77,11 @@ public class Model {
 							 client.setAccountBalance(Double.parseDouble(content));
 							 break;
 						 case "pesel": 
-							 client.setPesel(content);
+							 Pesel pesel = new Pesel(content);
+							 if (!pesel.isValid()){
+								 throw new PeselIsNotValidException();
+							 }
+							 client.setPesel(pesel);
 							 break;
 						 case "city": 
 							 address.setCity(content);						
@@ -90,7 +96,7 @@ public class Model {
 							 address.setPostalCode(Integer.parseInt(content));						
 							 break;
 						 default:
-							 throw new Exception("Bad data:");
+							 throw new Exception("Bad data - " + cNode.getNodeName());
 						 }
 					 }
 				 }
@@ -108,7 +114,7 @@ public class Model {
 		return model;
 	}
 	
-	public List<Client> searchByName(String name){
+	public List<Client> searchByName(String name) throws IllegalArgumentException{
 		List<Client> result = new ArrayList<Client>();
 		
 		for (Client client : this.clients){
@@ -117,10 +123,14 @@ public class Model {
 			}
 		}
 		
+		if (result.isEmpty()){
+			throw new IllegalArgumentException("No results.");
+		}
+		
 		return result;
 	}
 	
-	public List<Client> searchBySurname(String surname){
+	public List<Client> searchBySurname(String surname) throws IllegalArgumentException{
 		List<Client> result = new ArrayList<Client>();
 		
 		for (Client client : this.clients){
@@ -129,11 +139,19 @@ public class Model {
 			}
 		}
 		
+		if (result.isEmpty()){
+			throw new IllegalArgumentException("No results.");
+		}
+		
 		return result;
 	}
 	
-	public List<Client> searchByPesel(String pesel){
+	public List<Client> searchByPesel(Pesel pesel) throws PeselIsNotValidException, IllegalArgumentException{
 		List<Client> result = new ArrayList<Client>();
+		
+		if (!pesel.isValid()){
+			throw new PeselIsNotValidException();
+		}
 		
 		for (Client client : this.clients){
 			if (client.getPesel().equals(pesel)){
@@ -142,10 +160,14 @@ public class Model {
 			}
 		}
 		
+		if (result.isEmpty()){
+			throw new IllegalArgumentException("No results.");
+		}
+		
 		return result;
 	}
 	
-	public List<Client> searchByClientNumber(String clientNumber){
+	public List<Client> searchByClientNumber(String clientNumber) throws IllegalArgumentException{
 		List<Client> result = new ArrayList<Client>();
 		
 		for (Client client : this.clients){
@@ -155,10 +177,14 @@ public class Model {
 			break;
 		}
 		
+		if (result.isEmpty()){
+			throw new IllegalArgumentException("No results.");
+		}
+		
 		return result;
 	}
 	
-	public List<Client> searchByAddress(String[] address){
+	public List<Client> searchByAddress(String[] address) throws IllegalArgumentException{
 		List<Client> result = new ArrayList<Client>();
 
 		int postCode = Integer.parseInt(address[2]);
@@ -174,36 +200,51 @@ public class Model {
 			}
 		}
 		
+		if (result.isEmpty()){
+			throw new IllegalArgumentException("No results.");
+		}
+		
 		return result;
 	}
 	
-	public void addNewClient(String [] sClient) throws Exception{
+	public void addNewClient(String [] sClient) throws IllegalArgumentException, PeselIsNotValidException{
 		if (sClient.length != 8){
-			throw new Exception("Bad size of array in new client function!");
+			throw new IllegalArgumentException("Bad size of arguments array.");
 		}
+		
+		Pesel pesel = new Pesel(sClient[2]);
+		if (!pesel.isValid()){
+			throw new PeselIsNotValidException();
+		}
+		
 		Client client = new Client(	sClient[0], 
 									sClient[1], 
-									sClient[2], 
+									pesel, 
 									new Address(sClient[5],
 												sClient[4],
 												Integer.parseInt(sClient[6]),
 												Integer.parseInt(sClient[7])),
 									Double.parseDouble(sClient[3]),
-									geneateAccountNumber(sClient[2]));
+									geneateAccountNumber(pesel));
 		
 		clients.add(client);		
 	}
 	
 	public void removeAccounts(List<Client> rClients){
+		
+		if (rClients.isEmpty()){
+			throw new IllegalArgumentException("List is empty.");
+		}
+		
 		for (Client client : rClients){
 			clients.remove(client);
 		}
 	}
 	
-	private String geneateAccountNumber(String Pesel){
+	private String geneateAccountNumber(Pesel pesel){
 		Random rand = new Random();
-		return new String("	6788776655" + 
-							Pesel + 
+		return new String(	"6788776655" + 
+							pesel.toString() + 
 							(rand.nextInt(89999) + 10000) );
 	}
 	
@@ -213,7 +254,7 @@ public class Model {
 	
 	public void transfer(Client sender, Client receiver, double cash) throws Exception{
 		if (sender.getAccountBalance() < cash){
-			throw new Exception("Lack of account funds");
+			throw new NoCash("Lack of account funds");
 		}
 		
 		changeAccountBalance(sender, -cash);
@@ -263,12 +304,12 @@ public class Model {
 	        	element.appendChild(doc.createTextNode(addr.getHouseNomber().toString()));
 	        	eClient.appendChild(element);
 	        	//accountbalance
-	        	element = doc.createElement("acountBalance");
+	        	element = doc.createElement("accountBalance");
 	        	element.appendChild(doc.createTextNode(client.getAccountBalance().toString()));
 	        	eClient.appendChild(element);
 	        	//pesel
 	        	element = doc.createElement("pesel");
-	        	element.appendChild(doc.createTextNode(client.getPesel()));
+	        	element.appendChild(doc.createTextNode(client.getPesel().toString()));
 	        	eClient.appendChild(element);
 	        	
 	        	rootEle.appendChild(eClient);

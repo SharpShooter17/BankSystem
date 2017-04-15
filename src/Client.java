@@ -3,12 +3,12 @@ public class Client{
   private String surname;
   private Address address;
   private Double accountBalance;
-  private String pesel;
+  private Pesel pesel;
   private String accountNumber;
   
   	Client(	String name, 
   			String surname, 
-  			String pesel, 
+  			Pesel pesel, 
   			Address address, 
   			Double accountBalance, 
   			String accountNumber){
@@ -23,11 +23,11 @@ public class Client{
   	Client(){
   	}
 	
-	public String getPesel() {
+	public Pesel getPesel() {
 		return pesel;
 	}
 
-	public void setPesel(String pesel) {
+	public void setPesel(Pesel pesel) {
 		this.pesel = pesel;
 	}
 	
@@ -65,7 +65,7 @@ public class Client{
 	public String getData(){
 		String result = new String( "Name: " + name + 
 							"\nSurname: " + surname + 
-							"\nPESEL: " + pesel +
+							"\nPESEL: " + pesel.toString() +
 							"\nAccount balance: " + accountBalance + 
 							"\nAccount number: " + accountNumber);
 		

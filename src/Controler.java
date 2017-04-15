@@ -1,3 +1,4 @@
+import java.util.List;
 
 public class Controler {
 	View view;
@@ -9,7 +10,7 @@ public class Controler {
 	public boolean run(){
 		switch(view.showMainMenu()){
 		case SHOWALLCLIENTS:
-			view.showClients(Model.get().getClients());
+			showAllClients();
 			break;
 		case EXIT:
 			return exit();
@@ -46,6 +47,15 @@ public class Controler {
 		return true;
 	}
 	
+	private void showAllClients(){
+		List<Client> clients = Model.get().getClients();
+		if (!clients.isEmpty()){
+			view.showClients(clients);
+		} else {
+			view.showError("Lista klientow jest pusta!");
+		}
+	}
+	
 	private void removeClient(){
 		String parms = view.remove();
 		
@@ -53,7 +63,16 @@ public class Controler {
 			return;
 		}
 		
-		Model.get().removeAccounts(Model.get().searchByPesel(parms));
+		List<Client> clients = null;
+		
+		try {
+			clients = Model.get().searchByPesel(new Pesel(parms));
+			Model.get().removeAccounts(clients);
+		} catch(PeselIsNotValidException e){
+			view.showError("Pesel is not valid. " + e.getMessage());
+		} catch (IllegalArgumentException e){
+			view.showError("No clients to remove. " + e.getMessage());
+		}
 	}
 	
 	private void newClient(){
@@ -65,15 +84,37 @@ public class Controler {
 		
 		try{
 			Model.get().addNewClient(parms);
-		}catch(Exception e){
+		}catch(PeselIsNotValidException e){
 			view.showError(e.getMessage());
-		}		
+		}catch(IllegalArgumentException e){
+			view.showError(e.getMessage());
+		}
 	}
 	
 	private void transfer(){
 		String [] parm = view.transfer();
-		Client sender = Model.get().searchByPesel(parm[0]).get(0);
-		Client receiver = Model.get().searchByPesel(parm[1]).get(0);
+		Client sender = null;
+		try {
+			sender = Model.get().searchByPesel(new Pesel(parm[0])).get(0);
+		} catch (PeselIsNotValidException e1) {
+			view.showError( "The sender's PESEL is not valid." + e1.getMessage());
+			return;
+		} catch (IllegalArgumentException e){
+			view.showError(e.getMessage());
+			return;
+		}
+		
+		Client receiver = null;
+		
+		try {
+			receiver = Model.get().searchByPesel(new Pesel(parm[1])).get(0);
+		} catch (PeselIsNotValidException e1) {
+			view.showError( "The receiver's PESEL is not valid." + e1.getMessage());
+			return;
+		} catch (IllegalArgumentException e){
+			view.showError(e.getMessage());
+			return;
+		}
 		
 		if (!view.bSure()){
 			return;
@@ -86,12 +127,19 @@ public class Controler {
 		}
 	}
 	
-	private void payOff() throws Exception{
+	private void payOff() throws IllegalArgumentException{
 		String[] param = view.payOff();
-		Client client = Model.get().searchByPesel( param[0] ).get(0);
+		Client client;
+		try {
+			client = Model.get().searchByPesel( new Pesel(param[0]) ).get(0);
+		} catch (PeselIsNotValidException e) {
+			view.showError( "The PESEL is not valid." + e.getMessage());
+			return;
+		}
+		
 		double cash = -Double.parseDouble(param[1]);
 		if (cash > 0.0){
-			throw new Exception("Bad value");
+			throw new IllegalArgumentException("Bad value");
 		}
 		
 		if (!view.bSure()){
@@ -101,12 +149,23 @@ public class Controler {
 		Model.get().changeAccountBalance(client, cash);
 	}
 	
-	private void payment() throws Exception{
+	private void payment() throws IllegalArgumentException{
 		String[] param = view.payment();
-		Client client = Model.get().searchByPesel( param[0] ).get(0);
+		Client client = null;
+		try {
+			client = Model.get().searchByPesel( new Pesel(param[0]) ).get(0);
+		}catch(PeselIsNotValidException e){
+			view.showError("Pesel is not Valid. " + e.getMessage() );
+			return;
+		} catch (Exception e){
+			view.showError("Other: " + e.getMessage() );
+			return;
+		}
+		
 		double cash = Double.parseDouble(param[1]);
+		
 		if (cash < 0.0){
-			throw new Exception("Bad value");
+			throw new IllegalArgumentException("Bad value");
 		}
 		
 		if (!view.bSure()){
@@ -119,26 +178,90 @@ public class Controler {
 	private void findClient(){
 		switch(view.showMenuFindClient()){
 		case ADDRESS:
-			view.showClients(Model.get().searchByAddress(view.searchByAddress()));
+			findClientByAddress();
 			break;
 		case CANCEL:
 			return;
 		case CLIENTNUMBER:
-			view.showClients(Model.get().searchByClientNumber(view.enter("client number")));
+			findClientByClientNumber();
 			break;
 		case NAME:
-			view.showClients(Model.get().searchByName(view.enter("name")));
+			findClientByName();
 			break;
 		case PESEL:
-			view.showClients(Model.get().searchByPesel(view.enter("PESEL")));
+			showClientsByPesel();
 			break;
 		case SURNAME:
-			view.showClients(Model.get().searchBySurname(view.enter("surname")));
+			findClientBySurname();
 			break;
 		default:
 			break;
 		}
 	}	
+	
+	private void findClientByAddress(){
+		String [] parms = view.searchByAddress();
+		List<Client> clients;
+		try{
+			clients = Model.get().searchByAddress(parms);
+		} catch( IllegalArgumentException e ){
+			view.showError(e.getMessage());
+			return;
+		}
+		
+		view.showClients(clients);
+	}
+	
+	private void findClientByClientNumber(){
+		String parms = view.enter("client number");
+		List<Client> clients;
+		try {
+			clients = Model.get().searchByClientNumber(parms);
+		} catch(IllegalArgumentException e){
+			view.showError(e.getMessage());
+			return;
+		}
+		
+		view.showClients(clients);
+	}
+	
+	private void findClientByName(){
+		String parms = view.enter("name");
+		List<Client> clients;
+		try {
+			clients = Model.get().searchByName(parms);
+		} catch (IllegalArgumentException e){
+			view.showError(e.getMessage());
+			return;
+		}
+		view.showClients(clients);
+	}
+	
+	private void findClientBySurname(){
+		String parms = view.enter("surname");
+		List<Client> clients;
+		try{
+			clients = Model.get().searchBySurname(parms);
+		} catch(IllegalArgumentException e){
+			view.showError(e.getMessage());
+			return;
+		}
+		
+		view.showClients(clients);
+	}
+	
+	
+	private void showClientsByPesel(){
+		try {
+			view.showClients(Model.get().searchByPesel(new Pesel(view.enter("PESEL"))));
+		} catch (PeselIsNotValidException e) {
+			view.showError( "The PESEL is not valid." + e.getMessage());
+		} catch (IllegalArgumentException e){
+			view.showError(e.getMessage());
+		} catch (Exception e){
+			view.showError(e.getMessage());
+		}
+	}
 	
 	private boolean exit(){
 		if (!view.bSure()){

@@ -166,7 +166,7 @@ public class View {
 	}
 	
 	public void showError(String error){
-		System.err.println("[ERROR]: "+ error);
+		System.err.println("[ERROR] "+ error);
 	}
 	
 	public boolean bSure(){
