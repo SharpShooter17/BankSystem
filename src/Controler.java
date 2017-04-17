@@ -1,14 +1,14 @@
 import java.util.List;
 
 public class Controler {
-	View view;
+	View_I view;
 	
 	Controler(){
-		view = new View();
+		view = new ConsoleView();
 	}
 	
 	public boolean run(){
-		switch(view.showMainMenu()){
+		switch( MAINMENU.values()[view.showMainMenu()]){
 		case SHOWALLCLIENTS:
 			showAllClients();
 			break;
@@ -57,7 +57,7 @@ public class Controler {
 	}
 	
 	private void removeClient(){
-		String parms = view.remove();
+		String parms = view.ask("Are you sure that you want remove these clients?");
 		
 		if (!view.bSure()){
 			return;
@@ -176,7 +176,7 @@ public class Controler {
 	}
 	
 	private void findClient(){
-		switch(view.showMenuFindClient()){
+		switch(MENUFINDCLIENT.values()[view.showMenuFindClient()]){
 		case ADDRESS:
 			findClientByAddress();
 			break;
@@ -213,7 +213,7 @@ public class Controler {
 	}
 	
 	private void findClientByClientNumber(){
-		String parms = view.enter("client number");
+		String parms = view.ask("Enter client number: ");
 		List<Client> clients;
 		try {
 			clients = Model.get().searchByClientNumber(parms);
@@ -226,7 +226,7 @@ public class Controler {
 	}
 	
 	private void findClientByName(){
-		String parms = view.enter("name");
+		String parms = view.ask("Enter name: ");
 		List<Client> clients;
 		try {
 			clients = Model.get().searchByName(parms);
@@ -238,7 +238,7 @@ public class Controler {
 	}
 	
 	private void findClientBySurname(){
-		String parms = view.enter("surname");
+		String parms = view.ask("Enter surname: ");
 		List<Client> clients;
 		try{
 			clients = Model.get().searchBySurname(parms);
@@ -253,7 +253,7 @@ public class Controler {
 	
 	private void showClientsByPesel(){
 		try {
-			view.showClients(Model.get().searchByPesel(new Pesel(view.enter("PESEL"))));
+			view.showClients(Model.get().searchByPesel(new Pesel(view.ask("Enter PESEL: "))));
 		} catch (PeselIsNotValidException e) {
 			view.showError( "The PESEL is not valid." + e.getMessage());
 		} catch (IllegalArgumentException e){
@@ -263,12 +263,19 @@ public class Controler {
 		}
 	}
 	
+	private void wannaSave(){
+		if (view.bSure("Do you want save your work? Type 'Y' to confirm this operation.")){
+			Model.get().saveToXML();
+		}
+	}
+	
 	private boolean exit(){
+		
+		wannaSave();
+		
 		if (!view.bSure()){
 			return true;
 		}
-		
-		Model.get().saveToXML();
 		
 		return false;
 	}
